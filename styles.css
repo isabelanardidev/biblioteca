@@ -1,26 +1,30 @@
 :root {
-  --color-primary: #f1595c;
-  --color-dark: #000b3d;
-  --color-light: #ffffff;
+  --primary: #f1595c;
+  --dark: #000b3d;
+  --light: #ffffff;
+  --gray: #f5f6fa;
+  --shadow: rgba(0, 0, 0, 0.1);
 }
 
 body {
-  font-family: "Segoe UI", Roboto, sans-serif;
   margin: 0;
-  background: #f9f9f9;
-  color: var(--color-dark);
+  font-family: "Inter", sans-serif;
+  background-color: var(--gray);
+  color: var(--dark);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
+/* HEADER */
 .topbar {
-  background: var(--color-dark);
-  color: var(--color-light);
-  padding: 1rem;
+  background: var(--dark);
+  color: var(--light);
+  padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 5px var(--shadow);
 }
 
 .brand {
@@ -30,71 +34,115 @@ body {
 }
 
 .logo {
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
 }
 
-.subtitle {
+.brand h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.brand p {
+  margin: 0;
   font-size: 0.9rem;
   color: #ccc;
 }
 
+/* MAIN CONTAINER */
 .container {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 1.5rem;
+  padding: 2rem;
   flex-grow: 1;
 }
 
-.card {
-  background: var(--color-light);
-  border-radius: 1rem;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  padding: 1rem;
+/* SEARCH SECTION */
+.search-section {
+  grid-column: span 2;
+  background: var(--light);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 5px var(--shadow);
 }
 
-.controls .row {
-  margin-bottom: 1rem;
+.search-section h2 {
+  margin-top: 0;
+  color: var(--dark);
+}
+
+.search-bar {
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-bar input, .search-bar select {
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  flex-grow: 1;
+  font-size: 1rem;
 }
 
 .btn {
-  background: var(--color-primary);
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.3s;
+  font-weight: 600;
 }
 
 .btn:hover {
-  background: #d94a50;
+  background: #e0484f;
 }
 
 .btn.ghost {
   background: transparent;
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
-.results .list {
-  display: grid;
-  gap: 0.75rem;
+.card {
+  background: var(--light);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 5px var(--shadow);
+}
+
+.results h2 {
+  margin-top: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .book {
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 0.5rem;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  background-color: #fafafa;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.book:hover {
+  transform: scale(1.01);
+  box-shadow: 0 3px 6px var(--shadow);
 }
 
 .book h3 {
   margin: 0;
-  color: var(--color-primary);
+  color: var(--primary);
 }
 
 .book small {
@@ -102,26 +150,32 @@ body {
 }
 
 .sidebar {
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.footer {
-  text-align: center;
-  padding: 0.5rem;
-  background: var(--color-dark);
-  color: var(--color-light);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
 }
 
 .noresults {
   color: #999;
-  font-style: italic;
   text-align: center;
+  margin-top: 1rem;
+  font-style: italic;
 }
 
-@media (max-width: 768px) {
+.footer {
+  text-align: center;
+  padding: 1rem;
+  background: var(--dark);
+  color: var(--light);
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
   .container {
     grid-template-columns: 1fr;
+  }
+
+  .search-section {
+    grid-column: span 1;
   }
 }
