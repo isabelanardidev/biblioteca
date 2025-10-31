@@ -75,6 +75,14 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js"></script>
 
   <!-- Script principal -->
-  <script src="app.js" defer></script>
+  <script>
+    // Esperar hasta que la librería XLSX esté lista
+    document.addEventListener('DOMContentLoaded', () => {
+      const script = document.createElement('script');
+      script.src = 'app.js';
+      document.body.appendChild(script);
+    });
+  </script>
 </body>
 </html>
+
