@@ -5,14 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Catálogo Biblioteca Euneiz</title>
 
-  <!-- Favicon / logo -->
   <link rel="icon" href="logo.png" />
-
-  <!-- Hoja de estilos -->
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
   <header class="topbar">
     <div class="brand">
       <img src="logo.png" alt="Logo Universidad Euneiz" class="logo" />
@@ -57,13 +53,6 @@
       <h3>Instrucciones de préstamo</h3>
       <p>Para solicitar préstamo, podéis acudir al mostrador de Secretaría en horario de <strong>lunes a viernes de 10:00 a 18:00</strong>.</p>
       <p>Recordad que la devolución fuera de plazo, el mal estado o la pérdida del material puede implicar sanciones según la normativa.</p>
-
-      <h3>Información técnica</h3>
-      <ul>
-        <li>Ficheros buscados: <code>salud.csv</code> / <code>salud.xlsx</code> / <code>salud.ods</code> y <code>tecnologias.csv</code> / <code>tecnologias.xlsx</code> / <code>tecnologias.ods</code>.</li>
-        <li>Pon los ficheros y <code>logo.png</code> en la misma carpeta que este HTML.</li>
-        <li>Ejecuta con un servidor local (<code>python -m http.server</code>).</li>
-      </ul>
     </aside>
   </main>
 
@@ -71,34 +60,37 @@
     <p>&copy; Universidad Euneiz — Biblioteca Universitaria</p>
   </footer>
 
-  <!-- Librería XLSX (para leer Excel / ODS) -->
+  <!-- ========================================== -->
+  <!--  ✅ CARGA SEGURA DE LIBRERÍAS Y APP.JS     -->
+  <!-- ========================================== -->
   <script>
-    (function loadXLSX() {
-      const script = document.createElement('script');
-      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js";
-      script.onload = function() {
+    // Cargar la librería XLSX y luego app.js de forma secuencial
+    (async () => {
+      try {
+        console.log("⏳ Cargando librería XLSX...");
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js";
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
         console.log("✅ Librería XLSX cargada correctamente");
-        loadAppJS();
-      };
-      script.onerror = function() {
-        console.error("❌ Error al cargar la librería XLSX");
-      };
-      document.head.appendChild(script);
-    })();
 
-    function loadAppJS() {
-      const script = document.createElement('script');
-      script.src = "app.js?v=" + Date.now(); // fuerza a no usar caché
-      script.onload = function() {
+        console.log("⏳ Cargando app.js...");
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "app.js?v=" + Date.now(); // fuerza recarga sin caché
+          s.onload = resolve;
+          s.onerror = reject;
+          document.body.appendChild(s);
+        });
         console.log("✅ app.js cargado correctamente");
-      };
-      script.onerror = function() {
-        console.error("❌ Error al cargar app.js");
-      };
-      document.body.appendChild(script);
-    }
+      } catch (err) {
+        console.error("❌ Error cargando scripts:", err);
+        alert("Error al cargar dependencias. Revisa la conexión o la ruta de los archivos.");
+      }
+    })();
   </script>
 </body>
 </html>
-
-
