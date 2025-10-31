@@ -1,7 +1,7 @@
 /* ============================================================
-   app.js — versión robusta mejorada (2025)
+   app.js — versión robusta mejorada (2025-11-01)
    - Soporta CSV con comillas, saltos de línea, delimitador variable (, ; o tab)
-   - Limpieza de celdas y cabeceras
+   - Limpieza de celdas y cabeceras (incluye BOM, caracteres raros)
    - Compatible con los CSV de salud.csv y tecnologias.csv
 =============================================================== */
 
@@ -18,7 +18,7 @@ function normalizarTexto(texto) {
     .trim();
 }
 
-/* Detecta el delimitador (, ; o tab) analizando las primeras líneas */
+/* Detecta el delimitador (, ; o tab) */
 function detectarDelimitador(texto) {
   const sample = texto.slice(0, 3000);
   let inQuotes = false;
@@ -43,6 +43,8 @@ function detectarDelimitador(texto) {
 
 /* Parser CSV robusto */
 function parseCSVRobusto(texto, delim) {
+  texto = texto.replace(/^\uFEFF/, ''); // quitar BOM inicial
+
   const rows = [];
   let row = [];
   let cell = "";
@@ -84,12 +86,18 @@ function parseCSVRobusto(texto, delim) {
     rows.push(row);
   }
 
+  // Limpieza de celdas (BOM, comillas, espacios)
   return rows.map(r =>
-    r.map(c => (c === undefined || c === null) ? "" : c.trim())
+    r.map(c =>
+      (c || "")
+        .replace(/^\uFEFF/, "")
+        .trim()
+        .replace(/^"|"$/g, "")
+    )
   );
 }
 
-/* Encuentra la fila de cabecera (regla: fila 2 tras la primera no vacía) */
+/* Encuentra fila de cabecera */
 function indiceCabeceraSegunRegla(rows) {
   let firstNonEmpty = -1;
   for (let i = 0; i < rows.length; i++) {
@@ -107,7 +115,7 @@ function indiceCabeceraSegunRegla(rows) {
 /* Normaliza cabeceras */
 function normalizarCabecera(h) {
   if (!h && h !== 0) return "";
-  h = String(h || '').trim().replace(/^"|"$/g, ''); // quitar comillas externas
+  h = String(h || '').trim().replace(/^"|"$/g, '');
   return h
     .toLowerCase()
     .normalize("NFD")
@@ -119,21 +127,19 @@ function normalizarCabecera(h) {
 /* Mapea cabeceras a claves canónicas */
 function mapearCabecerasALabels(headerRow) {
   const mapping = {
-    titulo: ["titulo", "título", "title"],
+    titulo: ["titulo", "título", "title", "\ufefftitulo"],
     autor: ["autor", "autor a", "autor/a", "autores", "author"],
     editorial: ["editorial", "publisher"],
     edicion: ["edicion", "edición", "edition"],
     ano: ["ano", "año", "year"],
     isbn: ["isbn"],
-    titulacion: ["titulacion", "titulación"],
+    titulacion: ["titulacion", "titulación", "degree", "titulacion / tematica"],
     tematicas: [
       "materias tematicas", "materias", "tematicas", "temática",
       "tematica", "temas", "materias/tematicas", "materias / tematicas"
     ],
-    signatura: [
-      "signatura topografica", "signatura topográfica", "signatura"
-    ],
-    resumen: ["resumen", "sinopsis", "abstract"]
+    signatura: ["signatura topografica", "signatura topográfica", "signatura"],
+    resumen: ["resumen", "sinopsis", "abstract", "descripcion", "description"]
   };
 
   return headerRow.map(h => {
@@ -147,7 +153,7 @@ function mapearCabecerasALabels(headerRow) {
   });
 }
 
-/* Convierte filas en objetos según cabeceras */
+/* Convierte filas en objetos */
 function filasAObjetos(rows) {
   if (!rows || rows.length === 0) return [];
 
@@ -187,19 +193,19 @@ async function leerCSVRobusto(ruta) {
   if (!resp.ok) throw new Error(`No se pudo cargar ${ruta} (status ${resp.status})`);
   const textoRaw = await resp.text();
 
-  const texto = textoRaw.replace(/^\uFEFF/, ""); // quitar BOM
+  const texto = textoRaw.replace(/^\uFEFF/, "");
   const delim = detectarDelimitador(texto);
 
   let rows = parseCSVRobusto(texto, delim);
-
-  // Limpieza extra de celdas y comillas
-  rows = rows.map(r => r.map(c => c.trim().replace(/^"|"$/g, '')));
+  rows = rows.map(r =>
+    r.map(c => c.replace(/^\uFEFF/, '').trim().replace(/^"|"$/g, ''))
+  );
 
   const objects = filasAObjetos(rows);
   return objects;
 }
 
-/* ---------- Cargar datos (salud + tecnologías) ---------- */
+/* ---------- Cargar datos ---------- */
 async function cargarDatos() {
   try {
     const [salud, tec] = await Promise.all([
@@ -222,12 +228,12 @@ async function cargarDatos() {
     if (noResults) {
       noResults.hidden = false;
       noResults.textContent =
-        'Error al cargar los catálogos. Revisa los ficheros CSV y su codificación (UTF-8).';
+        'Error al cargar los catálogos. Revisa los ficheros CSV y su codificación (UTF-8 sin BOM).';
     }
   }
 }
 
-/* ---------- Render y búsqueda ---------- */
+/* ---------- Render ---------- */
 function mostrarResultados(libros) {
   const cont = document.getElementById('resultsList');
   const noResults = document.getElementById('noResults');
@@ -252,10 +258,14 @@ function mostrarResultados(libros) {
     const edicion = libro.edicion || '';
     const ano = libro.ano || libro.year || '';
     const isbn = libro.isbn || '';
-    const titulacion = libro.titulacion || '';
-    const tematica = libro.tematicas || libro.tematica || '';
     const signatura = libro.signatura || '';
     const resumen = libro.resumen || libro.otros || '';
+
+    let titTem = '';
+    if (libro.titulacion && libro.tematicas)
+      titTem = `${libro.titulacion} / ${libro.tematicas}`;
+    else
+      titTem = libro.titulacion || libro.tematicas || '';
 
     const div = document.createElement('div');
     div.className = 'book';
@@ -266,7 +276,7 @@ function mostrarResultados(libros) {
       <small><strong>Edición:</strong> ${escapeHtml(edicion)}</small><br>
       <small><strong>Año:</strong> ${escapeHtml(ano)}</small><br>
       <small><strong>ISBN:</strong> ${escapeHtml(isbn)}</small><br>
-      <small><strong>Titulación / Temática:</strong> ${escapeHtml(titulacion)} / ${escapeHtml(tematica)}</small><br>
+      <small><strong>Titulación / Temática:</strong> ${escapeHtml(titTem)}</small><br>
       <small><strong>Signatura:</strong> ${escapeHtml(signatura)}</small>
       <p>${escapeHtml(resumen)}</p>
     `;
@@ -308,7 +318,7 @@ function buscarLibros() {
   mostrarResultados(resultados);
 }
 
-/* Mostrar todos (según facultad) */
+/* Mostrar todos */
 function mostrarTodos() {
   const facultad = document.getElementById('facultySelect').value || 'all';
   if (facultad === 'salud') mostrarResultados(dataSalud);
