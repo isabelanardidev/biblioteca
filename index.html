@@ -8,12 +8,8 @@
   <!-- Favicon / logo -->
   <link rel="icon" href="logo.png" />
 
-  <!-- Styles -->
+  <!-- Hoja de estilos -->
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- SheetJS (XLSX) para leer xlsx/ods/xls -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js"></script>
-
 </head>
 <body>
 
@@ -64,9 +60,9 @@
 
       <h3>Información técnica</h3>
       <ul>
-        <li>Ficheros que busca la web: <code>salud.csv</code> / <code>salud.xlsx</code> / <code>salud.ods</code> y <code>tecnologias.csv</code> / <code>tecnologias.xlsx</code> / <code>tecnologias.ods</code>.</li>
-        <li>Pon los ficheros y <code>logo.png</code> en la misma carpeta que estos archivos.</li>
-        <li>Ejecuta con servidor local (p. ej. <code>python -m http.server</code>).</li>
+        <li>Ficheros buscados: <code>salud.csv</code> / <code>salud.xlsx</code> / <code>salud.ods</code> y <code>tecnologias.csv</code> / <code>tecnologias.xlsx</code> / <code>tecnologias.ods</code>.</li>
+        <li>Pon los ficheros y <code>logo.png</code> en la misma carpeta que este HTML.</li>
+        <li>Ejecuta con un servidor local (<code>python -m http.server</code>).</li>
       </ul>
     </aside>
   </main>
@@ -75,8 +71,10 @@
     <p>&copy; Universidad Euneiz — Biblioteca Universitaria</p>
   </footer>
 
-  <!-- Tu JavaScript -->
+  <!-- Librería XLSX (para leer Excel / ODS) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js"></script>
+
+  <!-- Script principal -->
   <script src="app.js" defer></script>
 </body>
 </html>
-
