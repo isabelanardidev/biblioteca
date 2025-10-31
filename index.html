@@ -3,37 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Catálogo Biblioteca Euneiz</title>
+  <title>Biblioteca Euneiz — Catálogo Universitario</title>
   <link rel="icon" href="logo.png" />
   <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <img src="logo.png" alt="Logo Universidad Euneiz" class="logo" />
       <div>
-        <h1>Biblioteca Universitaria — Euneiz</h1>
-        <p class="subtitle">
-          Catálogo — Búsqueda por título (Ciencias de la Salud / Nuevas Tecnologías Interactivas)
-        </p>
+        <h1>Biblioteca Universitaria</h1>
+        <p>Universidad EUNEIZ</p>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <section class="controls card">
-      <div class="row">
-        <label for="facultySelect">Facultad</label>
+    <aside class="sidebar card">
+      <h3>Instrucciones de préstamo</h3>
+      <p>📚 Para solicitar préstamo, acudid al mostrador de Secretaría en horario de <strong>lunes a viernes de 10:00 a 18:00</strong>.</p>
+      <p>⚠️ Recordad que la devolución fuera de plazo, el mal estado o la pérdida del material puede implicar sanciones según la normativa.</p>
+    </aside>
+    
+    <section class="search-section">
+      <h2>🔍 Buscar en el Catálogo</h2>
+      <div class="search-bar">
+        <input id="searchInput" type="search" placeholder="Escribe parte del título (ej: control, anatomía...)" />
         <select id="facultySelect">
           <option value="all">Todas las facultades</option>
           <option value="salud">Ciencias de la Salud</option>
           <option value="tecnologias">Nuevas Tecnologías Interactivas</option>
         </select>
-      </div>
-
-      <div class="row">
-        <label for="searchInput">Buscar por título</label>
-        <input id="searchInput" type="search" placeholder="Introduce título (o parte)..." />
         <button id="searchBtn" class="btn">Buscar</button>
         <button id="showAllBtn" class="btn ghost">Mostrar todos</button>
       </div>
@@ -44,16 +45,10 @@
       <div id="resultsList" class="list"></div>
       <div id="noResults" class="noresults" hidden>No se han encontrado libros.</div>
     </section>
-
-    <aside class="sidebar card">
-      <h3>Instrucciones de préstamo</h3>
-      <p>Para solicitar préstamo, podéis acudir al mostrador de Secretaría en horario de <strong>lunes a viernes de 10:00 a 18:00</strong>.</p>
-      <p>Recordad que la devolución fuera de plazo, el mal estado o la pérdida del material puede implicar sanciones según la normativa.</p>
-    </aside>
   </main>
 
   <footer class="footer">
-    <p>&copy; Universidad Euneiz — Biblioteca Universitaria</p>
+    <p>&copy; Universidad EUNEIZ — Biblioteca Universitaria</p>
   </footer>
 
   <script src="app.js"></script>
