@@ -1,15 +1,16 @@
-/* app.js (versión robusta para CSV con comillas, saltos de línea y delimitador variable)
-   - Asume que los ficheros son salud.csv y tecnologias.csv
-   - Cabeceras reales en la "fila 2" (segunda fila válida)
-   - Normaliza cabeceras y permite búsqueda parcial por título (sin acentos)
+/* app.js - versión final y robusta
+   - Detecta cabecera (busca columna tipo "título")
+   - Soporta distintas órdenes de columnas entre salud y tecnologias
+   - Parser CSV robusto (comillas, saltos de línea, delimitador , o ;)
+   - Búsqueda parcial sin acentos
 */
 
 let dataSalud = [];
 let dataTecno = [];
 
-/* ---------- Utilidades ---------- */
+/* ---------------- utilidades ---------------- */
 function normalizarTexto(texto) {
-  if (!texto && texto !== 0) return "";
+  if (texto === null || texto === undefined) return "";
   return String(texto)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -17,281 +18,189 @@ function normalizarTexto(texto) {
     .trim();
 }
 
-/* Detecta el delimitador (',' o ';') analizando las primeras líneas fuera de comillas */
+function limpiarHeaderParaClave(h) {
+  return normalizarTexto(String(h))
+    .replace(/[^a-z0-9]+/g, ' ') // quitar símbolos
+    .trim();
+}
+
+/* ---------------- detectar delimitador ---------------- */
 function detectarDelimitador(texto) {
-  // Miramos las primeras 2000 chars para decidir
   const sample = texto.slice(0, 2000);
   let inQuotes = false, commas = 0, semis = 0;
   for (let i = 0; i < sample.length; i++) {
     const ch = sample[i];
     if (ch === '"') {
-      // si hay doble comilla, se considera escape, avanzamos uno (se queda inQuotes igual)
-      if (sample[i + 1] === '"') { i++; continue; }
+      if (sample[i+1] === '"') { i++; continue; }
       inQuotes = !inQuotes;
     } else if (!inQuotes) {
       if (ch === ',') commas++;
       else if (ch === ';') semis++;
     }
   }
-  // Si hay más ; que , presumimos ; como delimitador
   return semis > commas ? ';' : ',';
 }
 
-/* Parser CSV robusto (maneja comillas dobles, comillas escapadas, y saltos de línea dentro de campos) */
+/* ---------------- parser CSV robusto ---------------- */
 function parseCSVRobusto(texto, delim) {
   const rows = [];
   let row = [];
-  let cell = "";
+  let cell = '';
   let inQuotes = false;
-
   for (let i = 0; i < texto.length; i++) {
     const ch = texto[i];
-
-    // Manejo de comillas
     if (ch === '"') {
-      // Si estamos dentro de comillas y la siguiente también es comilla -> comilla escapada
-      if (inQuotes && texto[i + 1] === '"') {
-        cell += '"';
-        i++; // saltar la comilla escapada
-        continue;
-      }
-      // Alterna el estado de inQuotes
+      if (inQuotes && texto[i+1] === '"') { cell += '"'; i++; continue; }
       inQuotes = !inQuotes;
       continue;
     }
-
-    // Si es delimitador y no estamos dentro de comillas => fin de celda
     if (ch === delim && !inQuotes) {
       row.push(cell);
-      cell = "";
+      cell = '';
       continue;
     }
-
-    // Si es salto de línea (LF) y no estamos dentro de comillas => fin de fila
-    // También manejamos CRLF: si hay \r\n, lo detectamos por el \n; si solo \r, lo aceptamos
     if ((ch === '\n' || ch === '\r') && !inQuotes) {
-      // Si es \r\n saltamos el \n adicional
-      if (ch === '\r' && texto[i + 1] === '\n') { /* consume \r y \n en dos pasos */ }
+      if (ch === '\r' && texto[i+1] === '\n') i++;
       row.push(cell);
       rows.push(row);
       row = [];
-      cell = "";
-
-      // Si es \r\n avanzar un paso extra para saltar el \n
-      if (ch === '\r' && texto[i + 1] === '\n') i++;
+      cell = '';
       continue;
     }
-
-    // Caracter normal -> añadir a la celda
     cell += ch;
   }
-
-  // Añadir última celda/row si hay datos
-  if (inQuotes) {
-    // Quedan comillas sin cerrar: aún así intentamos cerrar con lo que hay
-    // (no lanzamos excepción para ser tolerantes)
-    // console.warn("CSV: campo entrecomillado sin cerrar");
-  }
-  // Si hay contenido en cell o row incompleta, añadir
-  if (cell !== "" || row.length > 0) {
+  // añadir último
+  if (cell !== '' || row.length > 0) {
     row.push(cell);
     rows.push(row);
   }
-
-  // Trim de cada celda y normalización ligera (quitar espacios redundantes)
-  return rows.map(r => r.map(c => (c === undefined || c === null) ? "" : c.trim()));
+  // limpiar celdas
+  return rows.map(r => r.map(c => (c ?? '').trim()));
 }
 
-/* Encuentra la primera fila no vacía y devuelve el índice de la cabecera según la regla: cabecera = primeraNoVacia + 1 (fila 2) */
-function indiceCabeceraSegunRegla(rows) {
-  let firstNonEmpty = -1;
-  for (let i = 0; i < rows.length; i++) {
-    const hasContent = rows[i].some(cell => cell !== null && String(cell).trim() !== "");
-    if (hasContent) { firstNonEmpty = i; break; }
-  }
-  if (firstNonEmpty === -1) return 0;
-  // Intentamos colocar cabecera en la siguiente fila
-  let headerIndex = firstNonEmpty + 1;
-  // si no existe esa fila o está vacía, fallback a firstNonEmpty
-  if (!rows[headerIndex] || rows[headerIndex].every(c => c.trim() === "")) {
-    headerIndex = firstNonEmpty;
-  }
-  return headerIndex;
-}
-
-/* Normaliza un nombre de cabecera para mapear a claves canónicas */
-function normalizarCabecera(h) {
-  if (!h && h !== 0) return "";
-  return String(h)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // quitar acentos
-    .replace(/[^a-z0-9]+/g, " ")     // quitar caracteres extra
-    .trim();
-}
-
-/* Dada una fila de cabeceras, devuelve un array de claves canónicas por columna */
-function mapearCabecerasALabels(headerRow) {
-  // Definimos posibles variantes y la clave final que usaremos internamente
-  const mapping = {
-    titulo: ["titulo", "título", "title"],
-    autor: ["autor", "autor a", "autor/a", "autores", "author"],
-    editorial: ["editorial", "publisher"],
-    edicion: ["edicion", "edición", "edition"],
-    ano: ["ano", "año", "year"],
-    isbn: ["isbn"],
-    titulacion: ["titulacion", "titulación"],
-    tematicas: ["materias tematicas", "materias", "tematicas", "temática", "tematica", "materias tematicas", "temas", "tematicas"],
-    signatura: ["signatura topografica", "signatura topografica", "signatura", "signatura topográfica"],
-    resumen: ["resumen", "sinopsis", "abstract"]
-  };
-
-  // Crear array labels por posición
-  const labels = headerRow.map(h => {
-    const norm = normalizarCabecera(h);
-    for (const [key, variants] of Object.entries(mapping)) {
-      for (const v of variants) {
-        if (norm === v || norm.includes(v)) return key;
+/* ---------------- encontrar fila de cabecera ----------------
+   Busca en las primeras N filas una fila que contenga una celda con "titul" (título).
+   Si no encuentra, usa la primera fila no vacía como cabecera.
+*/
+function encontrarIndiceCabecera(rows, maxBuscar = 6) {
+  const top = Math.min(rows.length, maxBuscar);
+  for (let i = 0; i < top; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    for (const cell of row) {
+      if (!cell) continue;
+      const n = normalizarTexto(cell);
+      if (n.includes('titul') || n.includes('titulo') || n.includes('title')) {
+        return i;
       }
     }
-    // si no coincide con nada conocido -> usar el propio nombre normalizado como fallback
-    return norm || "col";
-  });
-
-  return labels;
-}
-
-/* Convierte filas en objetos usando la cabecera detectada (fila 2 según regla) */
-function filasAObjetos(rows) {
-  if (!rows || rows.length === 0) return [];
-
-  const headerIdx = indiceCabeceraSegunRegla(rows);
-  const headerRow = rows[headerIdx] || [];
-
-  const labels = mapearCabecerasALabels(headerRow);
-
-  const books = [];
-  for (let i = headerIdx + 1; i < rows.length; i++) {
-    const r = rows[i];
-    // saltar filas totalmente vacías
-    const allEmpty = r.every(c => c === null || c === undefined || String(c).trim() === "");
-    if (allEmpty) continue;
-
-    const obj = {};
-    for (let j = 0; j < labels.length; j++) {
-      const key = labels[j] || (`col${j}`);
-      obj[key] = (r[j] !== undefined && r[j] !== null) ? String(r[j]).trim() : "";
-    }
-
-    // en caso de que la fila tenga más columnas que la cabecera, concatenarlas en la última columna 'resumen' si existe
-    if (r.length > labels.length) {
-      const extra = r.slice(labels.length).join(" ").trim();
-      if (obj["resumen"] !== undefined) obj["resumen"] = (obj["resumen"] + " " + extra).trim();
-      else obj["otros"] = extra;
-    }
-
-    // Agregamos campo 'tituloDisplay' para buscar con la clave original si existe
-    // (muchas plantillas usan "Título" con mayúscula; nosotros ya mapeamos a 'titulo')
-    books.push(obj);
   }
-
-  return books;
+  // fallback: primera fila con contenido
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row && row.some(c => (c ?? '').trim() !== '')) return i;
+  }
+  return 0;
 }
 
-/* ---------- Lectura de CSV con todas las garantías ---------- */
-async function leerCSVRobusto(ruta) {
-  const resp = await fetch(ruta);
-  if (!resp.ok) throw new Error(`No se pudo cargar ${ruta} (status ${resp.status})`);
-  const textoRaw = await resp.text();
+/* ---------------- heurística mapeo columna -> clave ----------------
+   Para cada cabecera normalizada, asignamos la clave interna:
+   - contiene 'titul' -> 'titulo'
+   - contiene 'autor' -> 'autor'
+   - 'editorial' -> 'editorial'
+   - 'edicion' o 'edición' -> 'edicion'
+   - 'ano' o 'año' -> 'ano'
+   - 'isbn' -> 'isbn'
+   - 'titul' -> 'titulacion' (si aplica)
+   - 'mater' -> 'tematicas'
+   - 'signatur' -> 'signatura'
+   - 'resum' -> 'resumen'
+   Si no encaja, usamos la propia cabecera simplificada.
+*/
+function mapClaveDesdeHeader(header) {
+  const h = limpiarHeaderParaClave(header);
+  if (!h) return '';
+  if (h.includes('titul')) return 'titulo';
+  if (h.includes('autor')) return 'autor';
+  if (h.includes('editorial')) return 'editorial';
+  if (h.includes('edicion') || h.includes('edición')) return 'edicion';
+  if (h.includes('ano') || h.includes('año') || h.includes('year')) return 'ano';
+  if (h.includes('isbn')) return 'isbn';
+  if (h.includes('titulacion') || h.includes('titulaci')) return 'titulacion';
+  if (h.includes('mater')) return 'tematicas';
+  if (h.includes('tematic') || h.includes('temática')) return 'tematicas';
+  if (h.includes('signatur')) return 'signatura';
+  if (h.includes('resum')) return 'resumen';
+  // fallback: la propia cabecera limpia (sin espacios)
+  return h.replace(/\s+/g, '_');
+}
 
-  // Eliminar BOM si existe
-  const texto = textoRaw.replace(/^\uFEFF/, "");
-
-  // Detectar delimitador
-  const delim = detectarDelimitador(texto);
-
-  // Parse robusto
-  const rows = parseCSVRobusto(texto, delim);
-
-  // Convertir a objetos
-  const objects = filasAObjetos(rows);
+/* ---------------- convertir filas a objetos ---------------- */
+function filasAObjetosConCabecera(rows) {
+  if (!rows || rows.length === 0) return [];
+  const idxHeader = encontrarIndiceCabecera(rows, 8);
+  const headerRow = rows[idxHeader].map(h => (h ?? '').trim());
+  const headerKeys = headerRow.map(h => mapClaveDesdeHeader(h));
+  // merge siguientes filas
+  const objects = [];
+  for (let i = idxHeader + 1; i < rows.length; i++) {
+    const r = rows[i];
+    // saltar fila vacía
+    if (!r || r.every(c => (c ?? '').trim() === '')) continue;
+    const obj = {};
+    for (let j = 0; j < headerKeys.length; j++) {
+      const key = headerKeys[j] || `col${j}`;
+      obj[key] = (r[j] ?? '').trim();
+    }
+    // si la fila tiene más columnas que header, añadimos al resumen (si existe) o a 'otros'
+    if (r.length > headerKeys.length) {
+      const extra = r.slice(headerKeys.length).join(' ').trim();
+      if (obj['resumen'] !== undefined) obj['resumen'] = (obj['resumen'] + ' ' + extra).trim();
+      else obj['otros'] = extra;
+    }
+    objects.push(obj);
+  }
+  console.log('Cabecera escogida (index):', idxHeader, headerRow);
+  console.log('Claves mapeadas:', headerKeys);
   return objects;
 }
 
-/* ---------- Cargar datos (salud + tecnologias) ---------- */
+/* ---------------- leer CSV robusto y convertir ---------------- */
+async function leerCSVAuto(ruta) {
+  const res = await fetch(ruta);
+  if (!res.ok) throw new Error(`No se pudo cargar ${ruta} (status ${res.status})`);
+  let text = await res.text();
+  // eliminar BOM
+  text = text.replace(/^\uFEFF/, '');
+  const delim = detectarDelimitador(text);
+  const rows = parseCSVRobusto(text, delim);
+  const objects = filasAObjetosConCabecera(rows);
+  return objects;
+}
+
+/* ---------------- carga de ambos ficheros ---------------- */
 async function cargarDatos() {
   try {
-    const [salud, tec] = await Promise.all([
-      leerCSVRobusto('salud.csv'),
-      leerCSVRobusto('tecnologias.csv')
+    const [saludRows, tecRows] = await Promise.all([
+      leerCSVAuto('salud.csv'),
+      leerCSVAuto('tecnologias.csv')
     ]);
-    dataSalud = salud.map(b => ({ ...b, _faculty: 'salud' }));
-    dataTecno = tec.map(b => ({ ...b, _faculty: 'tecnologias' }));
-
-    console.log('Datos cargados: salud:', dataSalud.length, 'tecnologias:', dataTecno.length);
+    // asignar _tipo para distinguir
+    dataSalud = saludRows.map(r => ({ ...r, _tipo: 'salud' }));
+    dataTecno = tecRows.map(r => ({ ...r, _tipo: 'tecnologias' }));
+    console.log('Libros salud:', dataSalud.length, 'Libros tec:', dataTecno.length);
     mostrarResultados([...dataSalud, ...dataTecno]);
   } catch (err) {
-    console.error('Error cargando datos:', err);
-    const noResults = document.getElementById('noResults');
-    if (noResults) {
-      noResults.hidden = false;
-      noResults.textContent = 'Error al cargar los catálogos. Revisa los ficheros CSV y su codificación (UTF-8).';
-    }
+    console.error('Error en cargarDatos:', err);
+    const noRes = document.getElementById('noResults');
+    if (noRes) { noRes.hidden = false; noRes.textContent = 'Error cargando archivos CSV (revisa rutas y codificación UTF-8).'; }
   }
 }
 
-/* ---------- Render y búsqueda (búsqueda parcial, sin acentos) ---------- */
-function mostrarResultados(libros) {
-  const cont = document.getElementById('resultsList');
-  const noResults = document.getElementById('noResults');
-  cont.innerHTML = '';
-
-  if (!libros || libros.length === 0) {
-    if (noResults) noResults.hidden = false;
-    return;
-  }
-  if (noResults) noResults.hidden = true;
-
-  // ordenar por título si existe
-  libros.sort((a, b) => {
-    const ta = normalizarTexto(a.titulo || a.title || '');
-    const tb = normalizarTexto(b.titulo || b.title || '');
-    return ta.localeCompare(tb, 'es', { sensitivity: 'base' });
-  });
-
-  for (const libro of libros) {
-    const title = libro.titulo || libro.title || libro.col0 || 'Sin título';
-    const autor = libro.autor || libro.col1 || 'Desconocido';
-    const editorial = libro.editorial || libro.col2 || '';
-    const edicion = libro.edicion || libro.edicion || '';
-    const ano = libro.ano || libro.year || '';
-    const isbn = libro.isbn || '';
-    const titulacion = libro.titulacion || '';
-    const tematica = libro.tematicas || libro.tematica || '';
-    const signatura = libro.signatura || '';
-    const resumen = libro.resumen || libro.otros || '';
-
-    const div = document.createElement('div');
-    div.className = 'book';
-    div.innerHTML = `
-      <h3>${escapeHtml(title)}</h3>
-      <small><strong>Autor:</strong> ${escapeHtml(autor)}</small><br>
-      <small><strong>Editorial:</strong> ${escapeHtml(editorial)}</small><br>
-      <small><strong>Edición:</strong> ${escapeHtml(edicion)}</small><br>
-      <small><strong>Año:</strong> ${escapeHtml(ano)}</small><br>
-      <small><strong>ISBN:</strong> ${escapeHtml(isbn)}</small><br>
-      <small><strong>Titulación / Temática:</strong> ${escapeHtml(titulacion)} / ${escapeHtml(tematica)}</small><br>
-      <small><strong>Signatura:</strong> ${escapeHtml(signatura)}</small>
-      <p>${escapeHtml(resumen)}</p>
-    `;
-    cont.appendChild(div);
-  }
-}
-
-/* Escape básico para evitar inyecciones (aunque estamos en cliente) */
-function escapeHtml(str) {
-  if (!str && str !== 0) return '';
-  return String(str)
+/* ---------------- render y búsqueda ---------------- */
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -299,29 +208,50 @@ function escapeHtml(str) {
     .replaceAll("'", '&#39;');
 }
 
-/* Búsqueda parcial por título (sin acentos) */
-function buscarLibros() {
-  const q = normalizarTexto(document.getElementById('searchInput').value || '');
-  const facultad = document.getElementById('facultySelect').value || 'all';
-  let base = [];
-  if (facultad === 'salud') base = dataSalud;
-  else if (facultad === 'tecnologias') base = dataTecno;
-  else base = [...dataSalud, ...dataTecno];
-
-  if (!q) {
-    mostrarResultados(base);
+function mostrarResultados(libros) {
+  const cont = document.getElementById('resultsList');
+  const noRes = document.getElementById('noResults');
+  cont.innerHTML = '';
+  if (!libros || libros.length === 0) {
+    if (noRes) { noRes.hidden = false; noRes.textContent = 'No se han encontrado libros.'; }
     return;
   }
+  if (noRes) noRes.hidden = true;
 
-  const resultados = base.filter(item => {
-    const title = normalizarTexto(item.titulo || item.title || '');
-    return title.includes(q);
-  });
+  // ordenar por título si existe
+  libros.sort((a,b) => normalizarTexto(a.titulo || '').localeCompare(normalizarTexto(b.titulo || '')) );
 
-  mostrarResultados(resultados);
+  for (const libro of libros) {
+    const facultad = libro._tipo === 'salud' ? 'Ciencias de la Salud' : 'Nuevas Tecnologías Interactivas';
+    const html = `
+      <div class="book">
+        <h3>${escapeHtml(libro.titulo || libro.title || 'Sin título')}</h3>
+        <small><strong>Facultad:</strong> ${escapeHtml(facultad)}</small><br>
+        <small><strong>Autor:</strong> ${escapeHtml(libro.autor || '')}</small><br>
+        <small><strong>Editorial:</strong> ${escapeHtml(libro.editorial || '')}</small><br>
+        <small><strong>Edición:</strong> ${escapeHtml(libro.edicion || '')}</small><br>
+        <small><strong>Año:</strong> ${escapeHtml(libro.ano || '')}</small><br>
+        <small><strong>ISBN:</strong> ${escapeHtml(libro.isbn || '')}</small><br>
+        ${ (libro.titulacion) ? `<small><strong>Titulación:</strong> ${escapeHtml(libro.titulacion)}</small><br>` : '' }
+        <small><strong>Materias/Temáticas:</strong> ${escapeHtml(libro.tematicas || '')}</small><br>
+        <small><strong>Signatura:</strong> ${escapeHtml(libro.signatura || '')}</small>
+        ${ (libro.resumen) ? `<p>${escapeHtml(libro.resumen)}</p>` : '' }
+      </div>
+    `;
+    cont.insertAdjacentHTML('beforeend', html);
+  }
 }
 
-/* Mostrar todos (según facultad) */
+function buscarLibros() {
+  const qraw = document.getElementById('searchInput').value || '';
+  const q = normalizarTexto(qraw);
+  const facultad = document.getElementById('facultySelect').value || 'all';
+  let base = facultad === 'salud' ? dataSalud : facultad === 'tecnologias' ? dataTecno : [...dataSalud, ...dataTecno];
+  if (!q) { mostrarResultados(base); return; }
+  const res = base.filter(item => normalizarTexto(item.titulo || '').includes(q));
+  mostrarResultados(res);
+}
+
 function mostrarTodos() {
   const facultad = document.getElementById('facultySelect').value || 'all';
   if (facultad === 'salud') mostrarResultados(dataSalud);
@@ -329,12 +259,10 @@ function mostrarTodos() {
   else mostrarResultados([...dataSalud, ...dataTecno]);
 }
 
-/* Eventos UI */
+/* eventos UI */
 document.getElementById('searchBtn').addEventListener('click', buscarLibros);
 document.getElementById('showAllBtn').addEventListener('click', mostrarTodos);
-document.getElementById('searchInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') buscarLibros();
-});
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') buscarLibros(); });
 
-/* Inicialización */
+/* iniciar carga */
 cargarDatos();
