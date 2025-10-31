@@ -90,7 +90,7 @@ function parseCSVRobusto(texto, delim) {
   return rows.map(r =>
     r.map(c =>
       (c || "")
-        .replace(/^\uFEFF/, "")
+        .replace(/\uFEFF/g, "") // quitar BOM en cualquier posición
         .trim()
         .replace(/^"|"$/g, "")
     )
@@ -115,8 +115,10 @@ function indiceCabeceraSegunRegla(rows) {
 /* Normaliza cabeceras */
 function normalizarCabecera(h) {
   if (!h && h !== 0) return "";
-  h = String(h || '').trim().replace(/^"|"$/g, '');
-  return h
+  return String(h || '')
+    .replace(/\uFEFF/g, '') // eliminar BOM en cualquier posición
+    .replace(/^"|"$/g, '')  // quitar comillas
+    .trim()
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -127,7 +129,7 @@ function normalizarCabecera(h) {
 /* Mapea cabeceras a claves canónicas */
 function mapearCabecerasALabels(headerRow) {
   const mapping = {
-    titulo: ["titulo", "título", "title", "\ufefftitulo"],
+    titulo: ["titulo", "título", "title"],
     autor: ["autor", "autor a", "autor/a", "autores", "author"],
     editorial: ["editorial", "publisher"],
     edicion: ["edicion", "edición", "edition"],
@@ -196,9 +198,14 @@ async function leerCSVRobusto(ruta) {
   const texto = textoRaw.replace(/^\uFEFF/, "");
   const delim = detectarDelimitador(texto);
 
+  // Aviso si hay caracteres raros "�"
+  if (texto.includes("�")) {
+    console.warn(`⚠️ El archivo ${ruta} contiene caracteres “�”. Posible problema de codificación (no UTF-8).`);
+  }
+
   let rows = parseCSVRobusto(texto, delim);
   rows = rows.map(r =>
-    r.map(c => c.replace(/^\uFEFF/, '').trim().replace(/^"|"$/g, ''))
+    r.map(c => c.replace(/\uFEFF/g, '').trim().replace(/^"|"$/g, ''))
   );
 
   const objects = filasAObjetos(rows);
