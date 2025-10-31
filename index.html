@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Biblioteca Euneiz — Catálogo Universitario</title>
+  <title>Biblioteca EUNEIZ — Catálogo Universitario</title>
   <link rel="icon" href="logo.png" />
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- HEADER -->
   <header class="topbar">
     <div class="brand">
       <img src="logo.png" alt="Logo Universidad Euneiz" class="logo" />
@@ -20,16 +21,29 @@
   </header>
 
   <main class="container">
-    <aside class="sidebar card">
-      <h3>Instrucciones de préstamo</h3>
-      <p>📚 Para solicitar préstamo, acudid al mostrador de Secretaría en horario de <strong>lunes a viernes de 10:00 a 18:00</strong>.</p>
-      <p>⚠️ Recordad que la devolución fuera de plazo, el mal estado o la pérdida del material puede implicar sanciones según la normativa.</p>
-    </aside>
-    
-    <section class="search-section">
+
+    <!-- AVISO IMPORTANTE -->
+    <section class="announcement card">
+      <h2>ℹ️ Información importante</h2>
+      <p class="highlight">
+        Esta web es un <strong>catálogo informativo</strong> de los libros disponibles en la Biblioteca Universitaria EUNEIZ.
+      </p>
+      <p>
+        No permite realizar préstamos online. Si deseas llevarte un libro, 
+        el <strong>préstamo debe hacerse en persona</strong> en el mostrador de Secretaría.
+      </p>
+      <p>
+        🕒 <strong>Horario de atención:</strong> Lunes a viernes, de 10:00 a 18:00.<br />
+        📍 <strong>Ubicación:</strong> Secretaría de la Biblioteca Universitaria — Universidad EUNEIZ.
+      </p>
+    </section>
+
+    <!-- BÚSQUEDA -->
+    <section class="search-section card">
       <h2>🔍 Buscar en el Catálogo</h2>
+      <p>Introduce una palabra o parte del título para encontrar un libro disponible en la biblioteca.</p>
       <div class="search-bar">
-        <input id="searchInput" type="search" placeholder="Escribe parte del título (ej: control, anatomía...)" />
+        <input id="searchInput" type="search" placeholder="Ejemplo: control, anatomía, programación..." />
         <select id="facultySelect">
           <option value="all">Todas las facultades</option>
           <option value="salud">Ciencias de la Salud</option>
@@ -40,6 +54,7 @@
       </div>
     </section>
 
+    <!-- RESULTADOS -->
     <section class="results card">
       <h2>Resultados</h2>
       <div id="resultsList" class="list"></div>
