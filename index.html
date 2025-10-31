@@ -3,77 +3,81 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" type="image/png" href="favicon.png">
   <title>Catálogo Biblioteca Euneiz</title>
-  <link rel="stylesheet" href="style.css" />
-  <!-- SheetJS para leer xlsx/ods/csv en el navegador (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Favicon / logo -->
+  <link rel="icon" href="logo.png" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- SheetJS (XLSX) para leer xlsx/ods/xls -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js"></script>
+
+  <!-- FontAwesome (opcional para iconos) -->
+  <script src="https://kit.fontawesome.com/yourkitid.js" crossorigin="anonymous" defer></script>
 </head>
 <body>
+
   <header class="topbar">
     <div class="brand">
-      <div class="logo" aria-hidden="true">
-        <img src="favicon.png" width=80%>
-      </div>
-      <div class="brand-text">
+      <img src="logo.png" alt="Logo Universidad Euneiz" class="logo" />
+      <div>
         <h1>Biblioteca Universitaria — Euneiz</h1>
-        <p class="subtitle">Buscador de catálogo — Ciencias de la Salud &amp; Nuevas Tecnologías Interactivas</p>
+        <p class="subtitle">Catálogo — Búsqueda por título (Ciencias de la Salud / Nuevas Tecnologías Interactivas)</p>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <section class="controls">
-      <div class="control-row">
-        <label for="faculty">Facultad:</label>
-        <select id="faculty">
-          <option value="both">Mostrar ambas facultades</option>
+    <section class="controls card">
+      <div class="row">
+        <label for="facultySelect">Facultad</label>
+        <select id="facultySelect">
+          <option value="all">Todas las facultades</option>
           <option value="salud">Ciencias de la Salud</option>
-          <option value="nti">Nuevas Tecnologías Interactivas</option>
+          <option value="tecnologias">Nuevas Tecnologías Interactivas</option>
         </select>
+      </div>
 
-        <label for="query">Buscar por título:</label>
-        <input id="query" type="search" placeholder="Escribe parte o todo del título" />
-
+      <div class="row">
+        <label for="searchInput">Buscar por título</label>
+        <input id="searchInput" type="search" placeholder="Introduce título (o parte)..." />
         <button id="searchBtn" class="btn">Buscar</button>
-        <button id="showAllBtn" class="btn alt">Mostrar todos</button>
+        <button id="showAllBtn" class="btn ghost">Mostrar todos</button>
       </div>
 
-      <div class="hint">
-        <small>Los datos se cargan desde ficheros locales en la carpeta del proyecto (xlsx / xls / ods / csv). La app intenta detectar automáticamente el formato y la fila de cabeceras.</small>
+      <div class="row small">
+        <label>Formato detectado</label>
+        <div id="formatsInfo">Cargando archivos...</div>
       </div>
     </section>
 
-    <section id="results" class="results">
-      <div id="stats" class="stats">Cargando datos...</div>
-      <div id="list" class="list"></div>
+    <section class="results card">
+      <h2>Resultados</h2>
+      <div id="resultsList" class="list"></div>
+      <div id="noResults" class="noresults" hidden>No se han encontrado libros.</div>
     </section>
 
-    <aside class="sidebar">
-      <h2>Préstamo</h2>
+    <aside class="sidebar card">
+      <h3>Instrucciones de préstamo</h3>
       <p>Para solicitar préstamo, podéis acudir al mostrador de Secretaría en horario de <strong>lunes a viernes de 10:00 a 18:00</strong>.</p>
       <p>Recordad que la devolución fuera de plazo, el mal estado o la pérdida del material puede implicar sanciones según la normativa.</p>
 
-      <h3>Archivos esperados</h3>
-      <p>Pon en la misma carpeta del proyecto los ficheros con nombres aproximados (se intentan estas variantes):</p>
+      <h3>Información técnica</h3>
       <ul>
-        <li><code>salud.xlsx</code> / <code>salud.ods</code> / <code>salud.csv</code></li>
-        <li><code>nti.xlsx</code> / <code>nti.ods</code> / <code>nti.csv</code></li>
+        <li>Ficheros que busca la web: <code>salud.csv</code> / <code>salud.xlsx</code> / <code>salud.ods</code> y <code>tecnologias.csv</code> / <code>tecnologias.xlsx</code> / <code>tecnologias.ods</code>.</li>
+        <li>Pon los ficheros y <code>logo.png</code> en la misma carpeta que estos archivos.</li>
+        <li>Ejecuta con servidor local (p. ej. <code>python -m http.server</code>).</li>
       </ul>
-
-      <h3>Colores identidad</h3>
-      <div class="swatches">
-        <div class="sw" style="background:#f1595c"></div>
-        <div class="sw" style="background:#000b3d"></div>
-        <div class="sw" style="background:#ffffff; border:1px solid #ddd"></div>
-      </div>
     </aside>
   </main>
 
   <footer class="footer">
-    <small>Biblioteca Universitaria — Universidad Euneiz — &copy; <span id="year"></span></small>
+    <p>&copy; Universidad Euneiz — Biblioteca Universitaria</p>
   </footer>
 
-  <script src="app.js"></script>
+  <!-- Tu JavaScript -->
+  <script src="app.js" defer></script>
 </body>
 </html>
