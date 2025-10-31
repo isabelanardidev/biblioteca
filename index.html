@@ -72,17 +72,33 @@
   </footer>
 
   <!-- Librería XLSX (para leer Excel / ODS) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js"></script>
-
-  <!-- Script principal -->
   <script>
-    // Esperar hasta que la librería XLSX esté lista
-    document.addEventListener('DOMContentLoaded', () => {
+    (function loadXLSX() {
       const script = document.createElement('script');
-      script.src = 'app.js';
+      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js";
+      script.onload = function() {
+        console.log("✅ Librería XLSX cargada correctamente");
+        loadAppJS();
+      };
+      script.onerror = function() {
+        console.error("❌ Error al cargar la librería XLSX");
+      };
+      document.head.appendChild(script);
+    })();
+
+    function loadAppJS() {
+      const script = document.createElement('script');
+      script.src = "app.js?v=" + Date.now(); // fuerza a no usar caché
+      script.onload = function() {
+        console.log("✅ app.js cargado correctamente");
+      };
+      script.onerror = function() {
+        console.error("❌ Error al cargar app.js");
+      };
       document.body.appendChild(script);
-    });
+    }
   </script>
 </body>
 </html>
+
 
