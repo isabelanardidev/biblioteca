@@ -7,7 +7,6 @@ function normalizarTexto(texto) {
     : "";
 }
 
-// Lee un CSV y lo convierte a objetos JSON
 async function leerCSV(ruta) {
   const resp = await fetch(ruta);
   if (!resp.ok) throw new Error(`No se pudo cargar ${ruta}`);
@@ -32,12 +31,12 @@ async function cargarDatos() {
       leerCSV("salud.csv"),
       leerCSV("tecnologias.csv")
     ]);
-    console.log("Datos cargados correctamente");
     mostrarResultados([...dataSalud, ...dataTecno]);
   } catch (err) {
     console.error("Error cargando datos:", err);
-    document.getElementById("noResults").hidden = false;
-    document.getElementById("noResults").textContent =
+    const noResults = document.getElementById("noResults");
+    noResults.hidden = false;
+    noResults.textContent =
       "Error al cargar los catálogos. Revisa los ficheros CSV.";
   }
 }
@@ -54,7 +53,7 @@ function mostrarResultados(libros) {
   }
   noResults.hidden = true;
 
-  for (const libro of libros) {
+  libros.forEach(libro => {
     const div = document.createElement("div");
     div.className = "book";
     div.innerHTML = `
@@ -67,7 +66,7 @@ function mostrarResultados(libros) {
       <p>${libro["Resumen"] || ""}</p>
     `;
     cont.appendChild(div);
-  }
+  });
 }
 
 function buscarLibros() {
@@ -79,6 +78,7 @@ function buscarLibros() {
   else if (facultad === "tecnologias") base = dataTecno;
   else base = [...dataSalud, ...dataTecno];
 
+  // búsqueda parcial por palabra
   const resultados = base.filter(l =>
     normalizarTexto(l["Título"]).includes(texto)
   );
@@ -96,6 +96,11 @@ function mostrarTodos() {
 // Eventos
 document.getElementById("searchBtn").addEventListener("click", buscarLibros);
 document.getElementById("showAllBtn").addEventListener("click", mostrarTodos);
+
+// Permite buscar con "Enter"
+document.getElementById("searchInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") buscarLibros();
+});
 
 // Carga inicial
 cargarDatos();
